@@ -101,4 +101,3 @@ def get_group_col(df: pd.DataFrame) -> str:
     else:
         # fallback genérico, por si quieres capturarlo en la app
         return ""
-git
