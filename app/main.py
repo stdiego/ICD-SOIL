@@ -521,40 +521,38 @@ with tab1:
         st.warning("No hay datos disponibles para construir el ranking.")
 
 # ======================================================
-# TAB 2 — MAPA (SIN GEOPANDAS — COMPATIBLE STREAMLIT CLOUD)
+# TAB 2 — MAPA (COMPATIBLE CON STREAMLIT CLOUD — SIN GEOPANDAS)
 # ======================================================
 with tab2:
     st.subheader(f"🗺 Mapa ICD — {selected_var}")
 
-    try:
-        import json
+    import json
 
-        # Cargar GeoJSON manualmente
+    try:
+        # Cargar geojson manualmente
         with open(GEOJSON_PATH, "r", encoding="utf-8") as f:
             geojson = json.load(f)
 
-        # Detectar nombre interno del departamento en el GeoJSON
-        # (Ej: "NOMBRE_DPT", "DPTO_CNMBR", etc.)
-        possible_keys = [
+        # Buscar clave que contenga el nombre de departamento
+        sample_props = geojson["features"][0]["properties"]
+        posibles_keys = list(sample_props.keys())
+
+        candidatos = [
             "NOMBRE_DPT", "DPTO_CNMBR", "NOMBRE_DEP", 
-            "departamento", "name", "NAME"
+            "DEPARTAMENTO", "departamento", "name", "NAME"
         ]
 
         match_key = None
-        for key in possible_keys:
-            try:
-                sample = geojson["features"][0]["properties"].get(key)
-                if sample is not None:
-                    match_key = key
-                    break
-            except:
-                pass
+        for c in candidatos:
+            if c in posibles_keys:
+                match_key = c
+                break
 
         if match_key is None:
-            st.error("No se encontró una propiedad válida en el GeoJSON para departamentos.")
+            st.error("No se encontró una clave válida para departamentos en el GeoJSON.")
             st.stop()
 
-        # Crear ranking por departamento
+        # Preparar ranking
         ranking_geo = (
             df_filtered.groupby(group_col)[var_icd_col]
             .mean()
@@ -577,7 +575,7 @@ with tab2:
         st.plotly_chart(fig_map, use_container_width=True)
 
     except Exception as e:
-        st.error(f"Error al generar el mapa → {e}")
+        st.error(f"Error generando el mapa → {e}")
 
 # ======================================================
 # TAB 3 — FORECAST
@@ -962,6 +960,7 @@ st.markdown(
     "<div class='ag-footer'>✔ ICD Soil — Plataforma avanzada de calidad del dato, alertas y forecast.</div>",
     unsafe_allow_html=True,
 )
+
 
 
 
