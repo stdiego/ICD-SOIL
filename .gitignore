@@ -1,0 +1,10 @@
+models/
+processed/
+notebooks/
+entrega_final/
+*.parquet
+*.csv
+__pycache__/
+.idea/
+.venv/
+env/
