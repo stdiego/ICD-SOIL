@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import geopandas as gpd
 import plotly.express as px
 import numpy as np
@@ -963,5 +962,6 @@ st.markdown(
     "<div class='ag-footer'>✔ ICD Soil — Plataforma avanzada de calidad del dato, alertas y forecast.</div>",
     unsafe_allow_html=True,
 )
+
 
 
