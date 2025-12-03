@@ -1,5 +1,4 @@
 import streamlit as st
-import geopandas as gpd
 import plotly.express as px
 import numpy as np
 from sklearn.decomposition import PCA
@@ -960,6 +959,7 @@ st.markdown(
     "<div class='ag-footer'>✔ ICD Soil — Plataforma avanzada de calidad del dato, alertas y forecast.</div>",
     unsafe_allow_html=True,
 )
+
 
 
 
