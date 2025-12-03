@@ -522,60 +522,63 @@ with tab1:
         st.warning("No hay datos disponibles para construir el ranking.")
 
 # ======================================================
-# TAB 2 — MAPA
+# TAB 2 — MAPA (SIN GEOPANDAS — COMPATIBLE STREAMLIT CLOUD)
 # ======================================================
 with tab2:
     st.subheader(f"🗺 Mapa ICD — {selected_var}")
 
     try:
-        gdf = gpd.read_file(GEOJSON_PATH)
-        geo_match = None
+        import json
 
-        # Buscar columna coincidente (DEPTO)
-        for col in gdf.columns:
-            if col.lower() != "geometry":
-                if set(df[group_col].unique()).intersection(
-                        set(gdf[col].astype(str).str.upper())
-                ):
-                    geo_match = col
-                    gdf[col] = gdf[col].astype(str).str.upper()
+        # Cargar GeoJSON manualmente
+        with open(GEOJSON_PATH, "r", encoding="utf-8") as f:
+            geojson = json.load(f)
+
+        # Detectar nombre interno del departamento en el GeoJSON
+        # (Ej: "NOMBRE_DPT", "DPTO_CNMBR", etc.)
+        possible_keys = [
+            "NOMBRE_DPT", "DPTO_CNMBR", "NOMBRE_DEP", 
+            "departamento", "name", "NAME"
+        ]
+
+        match_key = None
+        for key in possible_keys:
+            try:
+                sample = geojson["features"][0]["properties"].get(key)
+                if sample is not None:
+                    match_key = key
                     break
+            except:
+                pass
 
-        if geo_match is None:
-            st.error(
-                "No hay coincidencia entre GeoJSON y nombres de departamento."
-            )
-        else:
-            ranking_geo = (
-                df_filtered.groupby(group_col)[var_icd_col]
-                .mean()
-                .reset_index()
-            )
+        if match_key is None:
+            st.error("No se encontró una propiedad válida en el GeoJSON para departamentos.")
+            st.stop()
 
-            merged = gdf.merge(
-                ranking_geo,
-                left_on=geo_match,
-                right_on=group_col,
-                how="left",
-            )
+        # Crear ranking por departamento
+        ranking_geo = (
+            df_filtered.groupby(group_col)[var_icd_col]
+            .mean()
+            .reset_index()
+        )
+        ranking_geo[group_col] = ranking_geo[group_col].astype(str).str.upper()
 
-            fig_map = px.choropleth_mapbox(
-                merged,
-                geojson=merged.geometry,
-                locations=merged.index,
-                color=var_icd_col,
-                hover_name=geo_match,
-                mapbox_style="carto-positron",
-                color_continuous_scale="Viridis",
-                zoom=4.5,
-                center={"lat": 4.5, "lon": -74},
-                opacity=0.85,
-                height=600,
-            )
-            st.plotly_chart(fig_map, use_container_width=True)
+        fig_map = px.choropleth(
+            ranking_geo,
+            geojson=geojson,
+            locations=group_col,
+            featureidkey=f"properties.{match_key}",
+            color=var_icd_col,
+            color_continuous_scale="Viridis",
+            projection="mercator",
+            title=f"Mapa ICD — {selected_var}",
+        )
+
+        fig_map.update_geos(fitbounds="locations", visible=False)
+        st.plotly_chart(fig_map, use_container_width=True)
 
     except Exception as e:
-        st.error(f"Error al cargar el mapa → {e}")
+        st.error(f"Error al generar el mapa → {e}")
 
 # ======================================================
 # TAB 3 — FORECAST
@@ -960,4 +963,5 @@ st.markdown(
     "<div class='ag-footer'>✔ ICD Soil — Plataforma avanzada de calidad del dato, alertas y forecast.</div>",
     unsafe_allow_html=True,
 )
+
 
